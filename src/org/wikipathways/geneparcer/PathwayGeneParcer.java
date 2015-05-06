@@ -1,23 +1,16 @@
 package org.wikipathways.geneparcer;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.List;
-import java.util.Objects;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 
-import org.bridgedb.BridgeDb;
-import org.bridgedb.DataSource;
-import org.bridgedb.Xref;
-import org.pathvisio.core.data.XrefWithSymbol;
 import org.pathvisio.core.model.ConverterException;
 import org.pathvisio.core.model.Pathway;
 import org.pathvisio.core.model.PathwayElement;
-import org.pathvisio.core.util.PathwayParser;
 import org.pathvisio.wikipathways.webservice.WSPathway;
 import org.wikipathways.client.WikiPathwaysClient;
 
@@ -49,18 +42,28 @@ public class PathwayGeneParcer {
 	 	System.out.println(list);
 	 	
 	 	PrintWriter writer = new PrintWriter("output.txt","UTF-8");
-	 	for(int i=0; i<list.size();i++){
+	 	
+	 	for(PathwayElement element : list) {
 		 	String name=p.getName();
 		 	String id=p.getId();
-	 		String nodeId= list.get(i).getElementID();
-	 		String nodeName= list.get(i).getTextLabel();
+	 		String nodeId= element.getElementID();
+	 		String nodeName= element.getTextLabel();
 	 		
-	 		//Many nodes didnt have gene ID or name, so i checked node type to see what they actually represent
-	 		//I think they are the visual objectsm, like the cell membrane and the lines. so i took them out of the output. 		 		
-	 		if(!(Objects.equals(list.get(i).getDataNodeType(), "Unknown"))){
-	 			writer.println(name+"\t"+ id+"\t"+ nodeId+"\t"+ nodeName);
+	 		// make sure nodeId and nodeName are not empty
+	 		if(nodeId != null && !nodeId.equals("") && 
+	 				nodeName != null && !nodeName.equals("")) {
+	 		
+		 		// since we only want to provide genes and proteins 
+		 		// we need to filter the nodes based on data node type
+		 		if(element.getDataNodeType().equals("GeneProduct") ||
+		 				element.getDataNodeType().equals("Protein")) {
+		 			
+		 			// TODO: identifier mapping (map everything to Ensembl)
+		 			// system code of Ensembl = En
+		 			
+		 			writer.println(name+"\t"+ id+"\t"+ nodeId+"\t"+ nodeName);
+		 		}
 	 		}
-	 		
 	 	} 	
 	 	writer.close();
 	}
