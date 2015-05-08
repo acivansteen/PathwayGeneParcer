@@ -8,7 +8,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.bridgedb.BridgeDb;
@@ -85,7 +87,15 @@ public class PathwayGeneParcer {
 						// Mapping to Ensembl Id and writing in text file 
 						Set<Xref> result = mapper.mapID(element.getXref(), DataSource.getExistingBySystemCode("En"));
 						for(Xref xref : result ){
-							writer.println(name+"\t"+ id+"\t"+ xref.getId() +"\t"+ nodeName);
+							Map<String,String> map = new HashMap<String,String>();
+							if(!map.containsKey(xref.getId())) map.put(xref.getId(), nodeName);
+							for(String key:map.keySet()){
+								writer.println(name+"\t"+ id+"\t"+ key +"\t"+ map.get(key));
+
+							}
+							
+							
+							
 						}
 					}
 				}
