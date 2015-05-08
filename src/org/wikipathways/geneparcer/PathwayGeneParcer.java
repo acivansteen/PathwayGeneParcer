@@ -34,65 +34,66 @@ public class PathwayGeneParcer {
 
 	public static void main(String[] args) throws MalformedURLException, RemoteException, ConverterException, FileNotFoundException, IOException, IDMapperException, ClassNotFoundException {
 		WikiPathwaysClient client=new WikiPathwaysClient(new URL("http://webservice.wikipathways.org"));
-		/* 
-	 WSPathwayInfo [] info = client.listPathways(Organism.HomoSapiens);
-	 for(WSPathwayInfo i : info) {
-		 //for testing 
+		
+		PrintWriter writer = new PrintWriter("output.txt","UTF-8");	
+		
+		System.out.println("[INFO]\t Get all pathways.");
+	 	WSPathwayInfo [] info = client.listPathways(Organism.HomoSapiens);
+	 	System.out.println("[INFO]\t Number of pathways: " + info.length);
+	 	
+	 	System.out.println("[INFO]\t Filter curated collection.");
+	 	// check if pathway is in curated collection
+	 	List<WSPathwayInfo> pwyList = new ArrayList<WSPathwayInfo>();
+	 	for(WSPathwayInfo i : info) {
+	 		for(WSCurationTag tag : client.getCurationTags(i.getId())) {
+				if(tag.getName().equals("Curation:AnalysisCollection")) {
+					pwyList.add(i);
+				}
+			}
+	 	}
+	 	System.out.println("[INFO]\t Number of curated pathways: " + pwyList.size());
+	 	
+	 	System.out.println("[INFO]\t Get all datanodes.");
+	 	for(WSPathwayInfo i : pwyList) {
+			WSPathway p = client.getPathway(i.getId());
 
-		 */
-
-		//WSPathway p = client.getPathway(i.getId());
-
-		WSPathway p = client.getPathway("WP58");
-		WSCurationTag[] c= client.getCurationTags(p.getId());
-
-		List<String> tags= new ArrayList<String>();
-
-		for(WSCurationTag tag : c){
-			tags.add(tag.getDisplayName());
-		}
-
-		if(tags.contains("Curated collection")){
+			// get general information
+			String name = p.getName();
+			String id = p.getId();
+			System.out.println(name);
+	
 			Pathway pathway = WikiPathwaysClient.toPathway(p);
-			System.out.println(pathway.getMappInfo().getMapInfoName());
-
-			PrintWriter writer = new PrintWriter("output.txt","UTF-8");	 	
-			List<PathwayElement> list= pathway.getDataObjects();
-
-
+	
 			//setting up bridgedb
-
 			File bridgedb = new File("Hs_Derby_20130701.bridge");
 			Class.forName("org.bridgedb.rdb.IDMapperRdb");  
 			IDMapper mapper = BridgeDb.connect("idmapper-pgdb:" + bridgedb.getAbsolutePath());
-
-
-			for(PathwayElement element : list) {
-
-				String name=p.getName();
-				String id=p.getId();
-				String nodeId= element.getElementID();
-				String nodeName= element.getTextLabel();
+	
+			for(PathwayElement element : pathway.getDataObjects()) {
+				String nodeId = element.getElementID();
+				String nodeName = element.getTextLabel();
+					
 				// make sure nodeId and nodeName are not empty
 				if(nodeId != null && !nodeId.equals("") && 
-						nodeName != null && !nodeName.equals("")) {
-
+					nodeName != null && !nodeName.equals("")) {
+	
 					// since we only want to provide genes and proteins 
 					// we need to filter the nodes based on data node type
 					if(element.getDataNodeType().equals("GeneProduct") ||
-							element.getDataNodeType().equals("Protein")) {
+						element.getDataNodeType().equals("Protein")) {
 
-						// Mapping to En Id and writing in text file 
+						// Mapping to Ensembl Id and writing in text file 
 						Set<Xref> result = mapper.mapID(element.getXref(), DataSource.getExistingBySystemCode("En"));
 						for(Xref xref : result ){
 							writer.println(name+"\t"+ id+"\t"+ xref.getId() +"\t"+ nodeName);
 						}
 					}
 				}
-			} 	
-			writer.close();	
-		}	
-		//	}
+				
+			}
+	 	}
+	 	System.out.println("[INFO]\t All pathways done.");
+	 	writer.close();
 	}
 }
 
