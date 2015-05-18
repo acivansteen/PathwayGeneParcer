@@ -2,3 +2,7 @@ bin/
 .settings/
 
 Hs_Derby_20130701.bridge
+edges.txt
+*.txt
+derby.log
+*.log
