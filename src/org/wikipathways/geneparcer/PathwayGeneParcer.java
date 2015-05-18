@@ -54,10 +54,7 @@ public class PathwayGeneParcer {
 		System.out.println("[INFO]\t Filter curated collection.");
 		// check if pathway is in curated collection
 		List<WSPathwayInfo> pwyList = new ArrayList<WSPathwayInfo>();
-		int z=1;
 		for (WSPathwayInfo i : info) {
-			System.out.println(z);
-			z++;
 			for (WSCurationTag tag : client.getCurationTags(i.getId())) {
 				if (tag.getName().equals("Curation:AnalysisCollection")) {
 					pwyList.add(i);
@@ -120,9 +117,6 @@ public class PathwayGeneParcer {
 			}
 		}
 			
-			
-		 
-		
 		 System.out.println("[INFO]\t All pathways done.");
 		 writerN.close();
 		 writerE.close();	
