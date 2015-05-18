@@ -44,9 +44,7 @@ public class PathwayGeneParcer {
 		PrintWriter writerN = new PrintWriter("nodes.txt","UTF-8");
 		Map<String, String> map = new HashMap<String, String>();
 		Map<String, String> pathwayset = new HashMap<String,String>();
-		
-		
-
+	
 		System.out.println("[INFO]\t Get all pathways.");
 		WSPathwayInfo[] info = client.listPathways(Organism.HomoSapiens);
 		System.out.println("[INFO]\t Number of pathways: " + info.length);
@@ -115,12 +113,9 @@ public class PathwayGeneParcer {
 			for (String key: pathwayset.keySet()){
 				writerN.println(key	+ "\t" + pathwayset.get(key));
 			}
-		}
-			
+		}			
 		 System.out.println("[INFO]\t All pathways done.");
 		 writerN.close();
 		 writerE.close();	
-		
-				 
 	}
 }
