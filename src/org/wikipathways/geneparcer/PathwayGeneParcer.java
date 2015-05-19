@@ -99,21 +99,24 @@ public class PathwayGeneParcer {
 						for (Xref xref : result) {					
 							if (!map.containsKey(xref.getId()))
 								map.put(xref.getId(), nodeName);
-							for(String key:map.keySet()){
-								writerE.println( id+"\t"+ key);
-							}
+							writerE.println(id+"\t"+xref.getId());
+
 						}
 					}
 				}
 			}
+		}
+
 			// writing all genes by ensemble Id into the nodes.txt file
-			for (String key : map.keySet()) {
-				writerN.println(key	+ "\t" + map.get(key));
-			}
-			for (String key: pathwayset.keySet()){
-				writerN.println(key	+ "\t" + pathwayset.get(key));
-			}
-		}			
+		for (String key : map.keySet()) {
+
+			writerN.println(key	+ "\t" + map.get(key));
+		}
+		for (String key: pathwayset.keySet()){
+
+			writerN.println(key	+ "\t" + pathwayset.get(key));
+		}
+					
 		 System.out.println("[INFO]\t All pathways done.");
 		 writerN.close();
 		 writerE.close();	
