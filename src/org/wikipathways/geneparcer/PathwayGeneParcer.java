@@ -12,7 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
+import org.bridgedb.AttributeMapper;
 import org.bridgedb.BridgeDb;
 import org.bridgedb.DataSource;
 import org.bridgedb.IDMapper;
@@ -66,6 +68,7 @@ public class PathwayGeneParcer {
 		for (WSPathwayInfo i : pwyList) {
 			WSPathway p = client.getPathway(i.getId());
 
+
 			// get general information
 			String name = p.getName();
 			String id = p.getId();
@@ -75,14 +78,13 @@ public class PathwayGeneParcer {
 			Pathway pathway = WikiPathwaysClient.toPathway(p);
 
 			// setting up bridgedb
-			File bridgedb = new File("Hs_Derby_20130701.bridge");
+			File bridgedb = new File("Hs_Derby_Ensembl_77.bridge");
 			Class.forName("org.bridgedb.rdb.IDMapperRdb");
 			IDMapper mapper = BridgeDb.connect("idmapper-pgdb:"
 					+ bridgedb.getAbsolutePath());
-
 			for (PathwayElement element : pathway.getDataObjects()) {
 				String nodeId = element.getElementID();
-				String nodeName = element.getTextLabel();
+				String nodeName = element.getTextLabel().replace("\n", "");
 
 				// make sure nodeId and nodeName are not empty
 				if (nodeId != null && !nodeId.equals("") && nodeName != null
@@ -96,9 +98,16 @@ public class PathwayGeneParcer {
 						// Mapping to Ensembl Id and writing in text file
 						Set<Xref> result = mapper.mapID(element.getXref(),
 								DataSource.getExistingBySystemCode("En"));
-						for (Xref xref : result) {					
-							if (!map.containsKey(xref.getId()))
-								map.put(xref.getId(), nodeName);
+						for (Xref xref: result) {					
+							if (!map.containsKey(xref.getId())) {
+	
+								Set<Xref> hgncResult = mapper.mapID(xref, DataSource.getExistingBySystemCode("H"));
+								if(hgncResult.size() > 0) {
+									nodeName = hgncResult.iterator().next().getId();						
+									map.put(xref.getId(), nodeName);
+								}
+
+							}
 							writerE.println(id+"\t"+xref.getId());
 
 						}
@@ -110,11 +119,11 @@ public class PathwayGeneParcer {
 			// writing all genes by ensemble Id into the nodes.txt file
 		for (String key : map.keySet()) {
 
-			writerN.println(key	+ "\t" + map.get(key));
+			writerN.println(key	+ "\t" + map.get(key) + "\tGene");
 		}
 		for (String key: pathwayset.keySet()){
 
-			writerN.println(key	+ "\t" + pathwayset.get(key));
+			writerN.println(key	+ "\t" + pathwayset.get(key) + "\tPathway");
 		}
 					
 		 System.out.println("[INFO]\t All pathways done.");
