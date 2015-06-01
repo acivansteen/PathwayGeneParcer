@@ -9,12 +9,10 @@ import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.StringTokenizer;
-
-import org.bridgedb.AttributeMapper;
 import org.bridgedb.BridgeDb;
 import org.bridgedb.DataSource;
 import org.bridgedb.IDMapper;
@@ -65,9 +63,10 @@ public class PathwayGeneParcer {
 				+ pwyList.size());
 
 		System.out.println("[INFO]\t Get all datanodes.");
+		Map<String, HashSet<String>> edgemapper = new HashMap<String,HashSet<String>>(); 
 		for (WSPathwayInfo i : pwyList) {
 			WSPathway p = client.getPathway(i.getId());
-
+			HashSet<String> edgemap = new HashSet<String>();
 
 			// get general information
 			String name = p.getName();
@@ -108,15 +107,22 @@ public class PathwayGeneParcer {
 								}
 
 							}
-							writerE.println(id+"\t"+xref.getId());
-
+							edgemap.add(xref.getId());
+							//edgemap.putIfAbsent(xref.getId(),id);
 						}
 					}
 				}
 			}
+			edgemapper.putIfAbsent(id, edgemap);
 		}
 
 			// writing all genes by ensemble Id into the nodes.txt file
+		for (String p : edgemapper.keySet()){
+			for(String key:edgemapper.get(p)){
+				writerE.println(p+"\t"+key);
+			}
+		}
+		
 		for (String key : map.keySet()) {
 
 			writerN.println(key	+ "\t" + map.get(key) + "\tGene");
