@@ -1,25 +1,24 @@
 package org.wikipathways.geneparcer;
 
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.FileWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.bridgedb.BridgeDb;
 import org.bridgedb.DataSource;
 import org.bridgedb.IDMapper;
 import org.bridgedb.IDMapperException;
 import org.bridgedb.Xref;
+import org.bridgedb.bio.DataSourceTxt;
 import org.bridgedb.bio.Organism;
-import org.pathvisio.core.model.ConverterException;
 import org.pathvisio.core.model.Pathway;
 import org.pathvisio.core.model.PathwayElement;
 import org.pathvisio.wikipathways.webservice.WSCurationTag;
@@ -32,19 +31,33 @@ import org.wikipathways.client.WikiPathwaysClient;
  * @author Bram
  *
  */
-public class PathwayGeneParcer {
+public class PathwayGeneParser {
 
-	public static void main(String[] args) throws MalformedURLException,
-			RemoteException, ConverterException, FileNotFoundException,
-			IOException, IDMapperException, ClassNotFoundException {
-		WikiPathwaysClient client = new WikiPathwaysClient(new URL(
-				"http://webservice.wikipathways.org"));
-
-		PrintWriter writerE = new PrintWriter("edges.txt", "UTF-8");
-		PrintWriter writerN = new PrintWriter("nodes.txt","UTF-8");
+	private WikiPathwaysClient client;
+	private IDMapper mapper;
+	private File outputNodes;
+	private File outputEdges;
+	
+	
+	public PathwayGeneParser(String url, File bridgeDbFile, File outputNodes, File outputEdges) throws MalformedURLException, ClassNotFoundException, IDMapperException {
+		client = new WikiPathwaysClient(new URL(url));
+		
+		// setting up bridgedb
+		DataSourceTxt.init();
+		Class.forName("org.bridgedb.rdb.IDMapperRdb");
+		mapper = BridgeDb.connect("idmapper-pgdb:" + bridgeDbFile.getAbsolutePath());
+		
+		this.outputEdges = outputEdges;
+		this.outputNodes = outputNodes;
+	}
+	
+	public void parsePathways() throws Exception {
+		BufferedWriter writerE = new BufferedWriter(new FileWriter(outputEdges));
+		BufferedWriter writerN = new BufferedWriter(new FileWriter(outputNodes));
+		
 		Map<String, String> map = new HashMap<String, String>();
 		Map<String, String> pathwayset = new HashMap<String,String>();
-	
+		
 		System.out.println("[INFO]\t Get all pathways.");
 		WSPathwayInfo[] info = client.listPathways(Organism.HomoSapiens);
 		System.out.println("[INFO]\t Number of pathways: " + info.length);
@@ -76,11 +89,6 @@ public class PathwayGeneParcer {
 			}
 			Pathway pathway = WikiPathwaysClient.toPathway(p);
 
-			// setting up bridgedb
-			File bridgedb = new File("Hs_Derby_Ensembl_79_v.01.bridge");
-			Class.forName("org.bridgedb.rdb.IDMapperRdb");
-			IDMapper mapper = BridgeDb.connect("idmapper-pgdb:"
-					+ bridgedb.getAbsolutePath());
 			for (PathwayElement element : pathway.getDataObjects()) {
 				String nodeId = element.getElementID();
 				String nodeName = element.getTextLabel().replace("\n", "");
@@ -95,20 +103,21 @@ public class PathwayGeneParcer {
 							|| element.getDataNodeType().equals("Protein")) {
 
 						// Mapping to Ensembl Id and writing in text file
-						Set<Xref> result = mapper.mapID(element.getXref(),
-								DataSource.getExistingBySystemCode("En"));
-						for (Xref xref: result) {					
-							if (!map.containsKey(xref.getId())) {
+						Set<Xref> result = mapper.mapID(element.getXref(), DataSource.getExistingBySystemCode("En"));
+						for (Xref xref: result) {	
+							if(xref.getId().startsWith("ENS")) {
+								if (!map.containsKey(xref.getId()) ) {
 	
-								Set<Xref> hgncResult = mapper.mapID(xref, DataSource.getExistingBySystemCode("H"));
-								if(hgncResult.size() > 0) {
-									nodeName = hgncResult.iterator().next().getId();						
-									map.put(xref.getId(), nodeName);
+									Set<Xref> hgncResult = mapper.mapID(xref, DataSource.getExistingBySystemCode("H"));
+									if(hgncResult.size() > 0) {
+										nodeName = hgncResult.iterator().next().getId();						
+										map.put(xref.getId(), nodeName);
+									}
+	
 								}
-
+								edgemap.add(xref.getId());
+								//edgemap.putIfAbsent(xref.getId(),id);
 							}
-							edgemap.add(xref.getId());
-							//edgemap.putIfAbsent(xref.getId(),id);
 						}
 					}
 				}
@@ -117,23 +126,34 @@ public class PathwayGeneParcer {
 		}
 
 			// writing all genes by ensemble Id into the nodes.txt file
+		writerE.write("Source\tTarget\n");
 		for (String p : edgemapper.keySet()){
 			for(String key:edgemapper.get(p)){
-				writerE.println(p+"\t"+key);
+				writerE.write(p+"\t"+key+"\n");
 			}
 		}
-		
+		writerN.write("Identifier\tName\tType\tCategory\n");
 		for (String key : map.keySet()) {
 
-			writerN.println(key	+ "\t" + map.get(key) + "\tGene");
+			writerN.write(key	+ "\t" + map.get(key) + "\tGene\t0"+"\n");
 		}
+		
 		for (String key: pathwayset.keySet()){
 
-			writerN.println(key	+ "\t" + pathwayset.get(key) + "\tPathway");
+			writerN.write(key	+ "\t" + pathwayset.get(key) + "\tPathway\t0"+"\n");
 		}
 					
 		 System.out.println("[INFO]\t All pathways done.");
 		 writerN.close();
 		 writerE.close();	
+	}
+	
+	public static void main(String[] args) throws Exception {
+		PathwayGeneParser parser = new PathwayGeneParser("http://webservice.wikipathways.org", 
+				new File("C:\\Users\\martina.kutmon\\Workspace\\bram\\Hs_Derby_Ensembl_79_v.01.bridge"), 
+				new File("nodes.txt"), 
+				new File("edges.txt"));
+		
+		parser.parsePathways();
 	}
 }
