@@ -135,12 +135,12 @@ public class PathwayGeneParser {
 		writerN.write("Identifier\tName\tType\tCategory\n");
 		for (String key : map.keySet()) {
 
-			writerN.write(key	+ "\t" + map.get(key) + "\tGene\t"+"\n");
+			writerN.write(key	+ "\t" + map.get(key) + "\tGene\t0"+"\n");
 		}
 		
 		for (String key: pathwayset.keySet()){
 
-			writerN.write(key	+ "\t" + pathwayset.get(key) + "\tPathway\t"+"\n");
+			writerN.write(key	+ "\t" + pathwayset.get(key) + "\tPathway\t0"+"\n");
 		}
 					
 		 System.out.println("[INFO]\t All pathways done.");
