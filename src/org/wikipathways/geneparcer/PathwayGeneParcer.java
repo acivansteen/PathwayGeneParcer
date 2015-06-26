@@ -77,7 +77,7 @@ public class PathwayGeneParcer {
 			Pathway pathway = WikiPathwaysClient.toPathway(p);
 
 			// setting up bridgedb
-			File bridgedb = new File("Hs_Derby_Ensembl_77.bridge");
+			File bridgedb = new File("Hs_Derby_Ensembl_79_v.01.bridge");
 			Class.forName("org.bridgedb.rdb.IDMapperRdb");
 			IDMapper mapper = BridgeDb.connect("idmapper-pgdb:"
 					+ bridgedb.getAbsolutePath());
